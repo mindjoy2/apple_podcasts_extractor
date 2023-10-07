@@ -23,12 +23,9 @@
     <option value="矽谷輕鬆談 Just Kidding Tech">矽谷輕鬆談 Just Kidding Tech</option>
     <option value="三五环">三五环</option>         
     <option value="聽天下：天下雜誌Podcast">聽天下：天下雜誌Podcast</option>
-    <option value="闖天下">闖天下</option>      
     <option value="T客播">T客播 TechPodcast</option>    
-    <option value="全新一週">全新一週</option>  
     <option value="塞掐">塞掐 Side Chat</option>
     <option value="寶博朋友">寶博朋友說</option>
-    <option value="贝望录">贝望录</option> 
     <option value="Robust: 程序员">Robust: 程序员的 TALK PLACE</option>         
     <option value="新聞真假掰">新聞真假掰</option>
     <option value='硅谷101'>硅谷101</option>      
@@ -40,13 +37,14 @@
     <option value="Founder 100">Founder 100</option>
     <option value="高效人生商學院">高效人生商學院</option>                                                                             
     <option value="半軟硬科技新聞">半軟硬科技新聞</option>
-    <option value="大话开源">大话开源</option>
     <option value="开源面对面">开源面对面</option>
     <option value="艾美講">艾美講 Amy蔣</option>
     <option value="陳月卿">陳月卿 健康4.0</option>        
     <option value="Brain Science with Ginger Campbell">Brain Science with Ginger Campbell</option>
     <option value="Nutrition Facts with Dr. Greger">Nutrition Facts with Dr. Greger</option>
     <option value="The Real Truth About Health">The Real Truth About Health</option>
+    <option value="果仁聊科技">果仁聊科技</option> 
+    <option value="聲活美學">聲活美學</option>     
   </select>
   <label for="cors_proxy">cors proxy</label>
   <input type="text" id="cors_proxy" name="cors_proxy" value="https://cors-anywhere.herokuapp.com/">    
@@ -180,7 +178,14 @@
       const episode_button = document.createElement("button");
       episode_button.setAttribute("id", episode.title);
       episode_button.setAttribute("style", "width: auto;margin-right: 0;margin-left: auto;");
-      episode_button.onclick = function (evt) { downloadUsingFetch(proxy_api + episode.url, episode.title, evt); };
+      
+      // episode_button.onclick = function (evt) { downloadUsingFetch(proxy_api + episode.url, episode.title, evt); };
+      let filename_with_ext = episode.title + ".m4a";
+      if(episode.url.includes(".mp3")) {
+        filename_with_ext = episode.title + ".mp3";
+      }
+      episode_button.onclick = function(evt){downloadUsingFetch(proxy_api+episode.url, filename_with_ext, evt);};
+      
       episode_button.innerText = "download";
       episode_li.appendChild(episode_button);
       // Append the episode element to the episodes element
