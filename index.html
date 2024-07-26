@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -12,7 +12,8 @@
 <main class="container">
   <label for="podcast_id">podcast search term</label>
   <input type="text" id="podcast_id" name="podcast_id">
-  <select id="builtin_id" onchange="option2input()">
+  <!-- <select id="builtin_id" onchange="option2input()"> -->
+  <select id="builtin_id" onchange="chain_action()">
     <option selected disabled> Select Program </option>
     <option value="曼報 Manny's Newsletter" selected="selected">曼報 Manny's Newsletter</option>
     <option value="不明白播客">不明白播客</option>
@@ -20,13 +21,13 @@
     <option value="科技行腳">科技行腳</option>    
     <option value="后互联网时代的乱弹">后互联网时代的乱弹</option>
     <option value="科技早知道">科技早知道</option>
-    <option value="矽谷輕鬆談 Just Kidding Tech">矽谷輕鬆談 Just Kidding Tech</option>
+    <!-- <option value="矽谷輕鬆談 Just Kidding Tech">矽谷輕鬆談 Just Kidding Tech</option> -->
     <option value="三五环">三五环</option>         
     <option value="聽天下：天下雜誌Podcast">聽天下：天下雜誌Podcast</option>
     <option value="T客播">T客播 TechPodcast</option>    
     <option value="塞掐">塞掐 Side Chat</option>
     <option value="寶博朋友">寶博朋友說</option>
-    <option value="Robust: 程序员">Robust: 程序员的 TALK PLACE</option>         
+    <!-- <option value="Robust: 程序员">Robust: 程序员的 TALK PLACE</option>          -->
     <option value="新聞真假掰">新聞真假掰</option>
     <option value='硅谷101'>硅谷101</option>      
     <option value="枫言枫语">枫言枫语</option>
@@ -34,16 +35,16 @@
     <option value="科技聽IC">科技聽IC</option>
     <option value="声动早咖啡">声动早咖啡</option>
     <option value="未來雜貨電">未來雜貨電</option>
-    <option value="Founder 100">Founder 100</option>
+    <!-- <option value="Founder 100">Founder 100</option> -->
     <option value="高效人生商學院">高效人生商學院</option>                                                                             
     <option value="半軟硬科技新聞">半軟硬科技新聞</option>
-    <option value="开源面对面">开源面对面</option>
+    <!-- <option value="开源面对面">开源面对面</option> -->
     <option value="艾美講">艾美講 Amy蔣</option>
     <option value="陳月卿">陳月卿 健康4.0</option>        
-    <option value="Brain Science with Ginger Campbell">Brain Science with Ginger Campbell</option>
+    <!-- <option value="Brain Science with Ginger Campbell">Brain Science with Ginger Campbell</option> -->
     <option value="Nutrition Facts with Dr. Greger">Nutrition Facts with Dr. Greger</option>
     <option value="The Real Truth About Health">The Real Truth About Health</option>
-    <option value="果仁聊科技">果仁聊科技</option> 
+    <!-- <option value="果仁聊科技">果仁聊科技</option>  -->
     <option value="聲活美學">聲活美學</option>     
   </select>
   <label for="cors_proxy">cors proxy</label>
@@ -85,6 +86,8 @@
      // Get result count and results
     const count = status['resultCount'] || 0;
     const results = status['results'];
+    // 2024-07-26 modify (search for all items in results instead of the 1st one alone) 
+    /*
      // Check if result count is 0 or track name does not include search term
     if (count === 0 || !results[0]['trackName'].includes(search)) {
       const failed_album = [{ status: 'error', reason: 'failed album' }];
@@ -93,6 +96,19 @@
      // Get feed URL and album title
     const feed_url = results[0]['feedUrl'];
     const album_title = results[0]['trackName'];
+    */
+    if (count === 0 ) {
+        return [{ status: 'error', reason: 'failed album' }];
+      }
+    let feed_url, album_title;
+    for (let result of results) {
+        if (result['trackName'].includes(search)) {
+            feed_url = result['feedUrl'];
+            album_title = result['trackName'];
+            break;
+        }
+    }
+
      // Declare xml variable
     let xml;
      try {
@@ -246,6 +262,11 @@
   function option2input() {
     document.getElementById("podcast_id").value = document.getElementById("builtin_id").value;
   }
+  // 2024-07-26 add (execute run_it after option2input is called)
+  function chain_action(){
+    option2input();
+    run_it();
+  }  
 </script>
 </body>
 
