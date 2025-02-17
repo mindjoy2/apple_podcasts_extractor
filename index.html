@@ -1,273 +1,315 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>apple podcasts extractor</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"></script>
-  <!-- <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css"> -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/picocss/1.5.10/pico.min.css">
-</head>
-<body onload="option2input()"></body>
-<main class="container">
-  <label for="podcast_id">podcast search term</label>
-  <input type="text" id="podcast_id" name="podcast_id">
-  <!-- <select id="builtin_id" onchange="option2input()"> -->
-  <select id="builtin_id" onchange="chain_action()">
-    <option selected disabled> Select Program </option>
-    <option value="曼報 Manny's Newsletter" selected="selected">曼報 Manny's Newsletter</option>
-    <option value="不明白播客">不明白播客</option>
-    <option value="范欽慧的自然書房">范欽慧的自然書房</option>     
-    <option value="科技行腳">科技行腳</option>    
-    <option value="后互联网时代的乱弹">后互联网时代的乱弹</option>
-    <option value="科技早知道">科技早知道</option>
-    <!-- <option value="矽谷輕鬆談 Just Kidding Tech">矽谷輕鬆談 Just Kidding Tech</option> -->
-    <option value="三五环">三五环</option>         
-    <option value="聽天下：天下雜誌Podcast">聽天下：天下雜誌Podcast</option>
-    <option value="T客播">T客播 TechPodcast</option>    
-    <option value="塞掐">塞掐 Side Chat</option>
-    <option value="寶博朋友">寶博朋友說</option>
-    <!-- <option value="Robust: 程序员">Robust: 程序员的 TALK PLACE</option>          -->
-    <option value="新聞真假掰">新聞真假掰</option>
-    <option value='硅谷101'>硅谷101</option>      
-    <option value="枫言枫语">枫言枫语</option>
-    <option value="津津乐道">津津乐道</option>
-    <option value="科技聽IC">科技聽IC</option>
-    <option value="声动早咖啡">声动早咖啡</option>
-    <option value="未來雜貨電">未來雜貨電</option>
-    <!-- <option value="Founder 100">Founder 100</option> -->
-    <option value="高效人生商學院">高效人生商學院</option>                                                                             
-    <option value="半軟硬科技新聞">半軟硬科技新聞</option>
-    <!-- <option value="开源面对面">开源面对面</option> -->
-    <option value="艾美講">艾美講 Amy蔣</option>
-    <option value="陳月卿">陳月卿 健康4.0</option>        
-    <!-- <option value="Brain Science with Ginger Campbell">Brain Science with Ginger Campbell</option> -->
-    <option value="Nutrition Facts with Dr. Greger">Nutrition Facts with Dr. Greger</option>
-    <option value="The Real Truth About Health">The Real Truth About Health</option>
-    <!-- <option value="果仁聊科技">果仁聊科技</option>  -->
-    <option value="聲活美學">聲活美學</option>     
-  </select>
-  <label for="cors_proxy">cors proxy</label>
-  <input type="text" id="cors_proxy" name="cors_proxy" value="https://cors-anywhere.herokuapp.com/">    
-  <button onclick="run_it()">Run</button>
-  <p>podcast name︰<em><span id="podcast_name"><span></em></p>
-  <div id="episodes"></div>
-</main>
-<script>
-  // Declare proxy API URL
-  //const proxy_api = 'https://cors-anywhere.herokuapp.com/';
-  let proxy_api;
-   // Declare global variable to store download ID
-  let id_download;
-   /**
-   * Fetch podcast data from iTunes API
-   * @param {string} search - Podcast search term
-   * @returns {array} - Podcast data
-   */
-  async function my_backend(search) {
-    // Check if search term is provided
-    if (!search) return [{ status: 'error', reason: 'lack of album' }];
-     // Construct URL
-    const url = `https://itunes.apple.com/search?term=${search}&country=US`;
-     // Set cors proxy
-    proxy_api = document.getElementById("cors_proxy").value;    
-     // Declare status variable
-    let status;
-     try {
-      // Fetch response from URL
-      //const response = await fetch(url, { method: 'GET'});
-      const response = await fetch(proxy_api+url, { method: 'GET'});
-      status = await response.json();
-    } catch (error) {
-      // Return error if failed to fetch
-      const failed_url = [{ status: 'error', reason: 'failed url or network' }];
-      return failed_url;
-    }
-     // Get result count and results
-    const count = status['resultCount'] || 0;
-    const results = status['results'];
-    // 2024-07-26 modify (search for all items in results instead of the 1st one alone) 
-    /*
-     // Check if result count is 0 or track name does not include search term
-    if (count === 0 || !results[0]['trackName'].includes(search)) {
-      const failed_album = [{ status: 'error', reason: 'failed album' }];
-      return failed_album;
-    }
-     // Get feed URL and album title
-    const feed_url = results[0]['feedUrl'];
-    const album_title = results[0]['trackName'];
-    */
-    if (count === 0 ) {
-        return [{ status: 'error', reason: 'failed album' }];
-      }
-    let feed_url, album_title;
-    for (let result of results) {
-        if (result['trackName'].includes(search)) {
-            feed_url = result['feedUrl'];
-            album_title = result['trackName'];
+  <head>
+    <!-- Metadata and dependencies -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Page title -->
+    <title>Apple Podcasts Extractor</title>
+
+    <!-- FileSaver.js: Used for saving files on the client-side -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"></script>
+
+    <!-- Pico CSS: Minimal CSS framework for styling -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/picocss/1.5.10/pico.min.css">
+  </head>
+
+  <body onload="option2input()">
+    <main class="container">
+      <!-- Input for podcast search term -->
+      <label for="podcast_id">Podcast Search Term</label>
+      <input type="text" id="podcast_id" name="podcast_id">
+
+      <!-- Dropdown for built-in podcast options -->
+      <select id="builtin_id" onchange="chain_action()">
+        <option selected disabled>Select Program</option>
+        <option value="曼報 Manny's Newsletter" selected="selected">曼報 Manny's Newsletter</option>
+        <option value="不明白播客">不明白播客</option>
+        <option value="范欽慧的自然書房">范欽慧的自然書房</option>
+        <option value="科技行腳">科技行腳</option>
+        <option value="后互联网时代的乱弹">后互联网时代的乱弹</option>
+        <option value="科技早知道">科技早知道</option>
+        <option value="三五环">三五环</option>
+        <option value="聽天下：天下雜誌Podcast">聽天下：天下雜誌Podcast</option>
+        <option value="T客播">T客播 TechPodcast</option>
+        <option value="塞掐">塞掐 Side Chat</option>
+        <option value="寶博朋友">寶博朋友說</option>
+        <option value="新聞真假掰">新聞真假掰</option>
+        <option value='硅谷101'>硅谷101</option>
+        <option value="枫言枫语">枫言枫语</option>
+        <option value="津津乐道">津津乐道</option>
+        <option value="科技聽IC">科技聽IC</option>
+        <option value="声动早咖啡">声动早咖啡</option>
+        <option value="未來雜貨電">未來雜貨電</option>
+        <option value="高效人生商學院">高效人生商學院</option>
+        <option value="半軟硬科技新聞">半軟硬科技新聞</option>
+        <option value="艾美講">艾美講 Amy蔣</option>
+        <option value="陳月卿">陳月卿 健康4.0</option>
+        <option value="Nutrition Facts with Dr. Greger">Nutrition Facts with Dr. Greger</option>
+        <option value="The Real Truth About Health">The Real Truth About Health</option>
+        <option value="聲活美學">聲活美學</option>
+      </select>
+
+      <!-- Input for CORS proxy URL -->
+      <label for="cors_proxy">CORS Proxy</label>
+      <input
+        type="text"
+        id="cors_proxy"
+        name="cors_proxy"
+        value="https://cors-anywhere.herokuapp.com/"
+      >
+
+      <!-- Button to start the podcast extraction -->
+      <button onclick="run_it()">Run</button>
+
+      <!-- Display the selected podcast name -->
+      <p>
+        Podcast Name: <em><span id="podcast_name"></span></em>
+      </p>
+
+      <!-- Container where episodes will be listed -->
+      <div id="episodes"></div>
+    </main>
+
+    <!-- JavaScript Section -->
+    <script>
+      // Global variables
+      let proxy_api;
+      let id_download;
+
+      /**
+       * Fetches podcast data from the iTunes search API, retrieves the feed,
+       * parses the XML, and extracts episode details.
+       *
+       * @param {string} search - The podcast search term.
+       * @returns {Promise<Array>} - An array with the status object and episode details.
+       */
+      async function my_backend(search) {
+        // Ensure a search term is provided
+        if (!search)
+          return [{ status: "error", reason: "lack of album" }];
+
+        // Construct the iTunes search URL using the provided search term
+        const url = `https://itunes.apple.com/search?term=${search}&country=US`;
+
+        // Get the CORS proxy URL from the input field
+        proxy_api = document.getElementById("cors_proxy").value;
+        let status;
+
+        // Fetch the search results via the proxy
+        try {
+          const response = await fetch(proxy_api + url, { method: "GET" });
+          status = await response.json();
+        } catch (error) {
+          return [{ status: "error", reason: "failed url or network" }];
+        }
+
+        // Check if any results were returned
+        const count = status["resultCount"] || 0;
+        const results = status["results"];
+
+        if (count === 0) {
+          return [{ status: "error", reason: "failed album" }];
+        }
+
+        let feed_url, album_title;
+        // Loop through the results to find a matching track name
+        for (let result of results) {
+          if (result["trackName"].includes(search)) {
+            feed_url = result["feedUrl"];
+            album_title = result["trackName"];
             break;
+          }
         }
-    }
 
-     // Declare xml variable
-    let xml;
-     try {
-      // Fetch XML from feed URL
-      const res0 = await fetch(proxy_api + feed_url, { method: 'GET'});
-      xml = await res0.text();
-    } catch (error) {
-      // Return error if failed to fetch
-      const failed_feed_url = [{ status: 'error', reason: 'failed feed url or network' }];
-      return failed_feed_url;
-    }
-     // Parse XML
-    const parser = new DOMParser();
-    const htmlDoc = parser.parseFromString(xml, 'text/xml');
-     // Get tracks
-    const CSS_TRACKS = "rss channel item";
-    const tracks = htmlDoc.querySelectorAll(CSS_TRACKS);
-     // Declare info array
-    let info = [];
-     // Iterate through tracks
-    for (track of tracks) {
-      // Get title and remove CDATA
-      let title = track.querySelector('title').innerHTML;
-      title = title.replace("<![CDATA[", "").replace("]]>", "");
-       // Push data to info array
-      info.push({
-        title: title,
-        date: track.querySelector('pubDate').innerHTML, // xml
-        url: track.querySelector('enclosure').getAttribute('url')
-      });
-    };
-     // Check if info array is empty
-    if (!info.length) {
-      const empty_album = [{ status: 'error', reason: 'invalid album' }];
-      return empty_album;
-    }
-     // Create program status object
-    const program_status = { status: "ok", albumName: album_title };
-     // Add program status to info array
-    info = [program_status, ...info];
-     // Return info array
-    return info;
-  };
-   /**
-   * Run program
-   */
-   async function run_it() {
-    // Get the podcast ID from the input element
-    const podcast_id = document.getElementById("podcast_id").value;
-    // Get the element to which we will append the episodes
-    const episodes = document.getElementById("episodes");
-    // Clear the episodes element
-    episodes.innerHTML = "";
-    // Create a hint element to show while loading
-    const episode_hint = document.createElement("div");
-    episodes.appendChild(episode_hint);
-    episode_hint.innerText = "loading...";
-    // Get the podcast data from the backend
-    const podcast = await my_backend(podcast_id);
-    // Set the podcast name in the page
-    document.getElementById("podcast_name").innerText = podcast[0].albumName;
-    // Remove the hint element
-    //const episode_tmp = document.querySelector("#episode_hint");
-    const episode_tmp = document.querySelector("#episodes div"); // manual fix
-    episodes.removeChild(episode_tmp);
-    // Iterate over the episodes
-    podcast.slice(1).forEach(episode => {
-      // Create a list item for the episode
-      const episode_li = document.createElement("li");
-      episode_li.setAttribute("class", "grid");
-      // Create an anchor element for the episode
-      const episode_anchor = document.createElement("a");
-      episode_anchor.setAttribute("href", episode.url);
-      episode_anchor.setAttribute("target", "_blank");
-      episode_anchor.innerText = episode.title;
-      episode_li.appendChild(episode_anchor);
-      // Create a span element for the episode date
-      const episode_span = document.createElement("span");
-      episode_span.setAttribute("style", "color: #999;");
-      episode_span.innerText = episode.date;
-      episode_li.appendChild(episode_span);
-      // Create a button element for downloading the episode
-      const episode_button = document.createElement("button");
-      episode_button.setAttribute("id", episode.title);
-      episode_button.setAttribute("style", "width: auto;margin-right: 0;margin-left: auto;");
-      
-      // episode_button.onclick = function (evt) { downloadUsingFetch(proxy_api + episode.url, episode.title, evt); };
-      let filename_with_ext = episode.title + ".m4a";
-      if(episode.url.includes(".mp3")) {
-        filename_with_ext = episode.title + ".mp3";
+        let xml;
+        // Attempt to fetch the podcast RSS feed via the proxy
+        try {
+          const res0 = await fetch(proxy_api + feed_url, { method: "GET" });
+          xml = await res0.text();
+        } catch (error) {
+          return [{ status: "error", reason: "failed feed url or network" }];
+        }
+
+        // Parse the XML feed
+        const parser = new DOMParser();
+        const htmlDoc = parser.parseFromString(xml, "text/xml");
+
+        // Select all episodes from the feed
+        const CSS_TRACKS = "rss channel item";
+        const tracks = htmlDoc.querySelectorAll(CSS_TRACKS);
+        let info = [];
+
+        // Extract episode details for each track
+        for (let track of tracks) {
+          let title = track.querySelector("title").innerHTML;
+          // Remove CDATA markers if present
+          title = title.replace("<![CDATA[", "").replace("]]>", "");
+
+          info.push({
+            title: title,
+            date: track.querySelector("pubDate").innerHTML,
+            url: track.querySelector("enclosure").getAttribute("url"),
+          });
+        }
+
+        // Return an error if no episodes were found
+        if (!info.length) {
+          return [{ status: "error", reason: "invalid album" }];
+        }
+
+        // Prepend the status info (including album name) to the episodes array
+        const program_status = { status: "ok", albumName: album_title };
+        info = [program_status, ...info];
+
+        return info;
       }
-      episode_button.onclick = function(evt){downloadUsingFetch(proxy_api+episode.url, filename_with_ext, evt);};
-      
-      episode_button.innerText = "download";
-      episode_li.appendChild(episode_button);
-      // Append the episode element to the episodes element
-      episodes.appendChild(episode_li);
-    });
-  }
-  // Function to update the progress of the download
-  function progress({ loaded, total }) {
-    const elProgress = document.getElementById(id_download);
-    elProgress.innerHTML = Math.round(loaded / total * 100) + '%';
-  }
-  // Function to download the file using Fetch API
-  async function downloadUsingFetch(FILE_URL, filename, evt) {
-    // Get the ID of the download button
-    id_download = evt.target.getAttribute('id');
-    // Get the progress element
-    const elProgress = document.getElementById(id_download);
-    // Set the progress element to show that processing has started
-    elProgress.innerHTML = 'start processing...';
-    // Fetch the file
-    const myFile = await fetch(FILE_URL);
-    // Get the content length of the file
-    const contentLength = myFile.headers.get('content-length');
-    // Convert the content length to an integer
-    const total = parseInt(contentLength, 10);
-    // Initialize the loaded bytes to 0
-    let loaded = 0;
-    // Create a new response using the ReadableStream
-    const res = new Response(new ReadableStream({
-      async start(controller) {
-        // Get the reader from the file body
-        const reader = myFile.body.getReader();
-        // Iterate over the file
-        for (; ;) {
-          // Read the next chunk
-          const { done, value } = await reader.read();
-          // If done, break the loop
-          if (done) break;
-          // Increment the loaded bytes
-          loaded += value.byteLength;
-          // Update the progress
-          progress({ loaded, total })
-          // Enqueue the chunk
-          controller.enqueue(value);
-        }
-        // Close the stream
-        controller.close();
-      },
-    }));
-    // Replace the dots in the filename with underscores
-    // filename = filename.replace(/[.]/g, '_');
-    // Get the blob from the response
-    const myBlob = await res.blob();
-    // Save the file using saveAs
-    saveAs(myBlob, filename);
-  }
-  // Function to set the podcast ID from the select element
-  function option2input() {
-    document.getElementById("podcast_id").value = document.getElementById("builtin_id").value;
-  }
-  // 2024-07-26 add (execute run_it after option2input is called)
-  function chain_action(){
-    option2input();
-    run_it();
-  }  
-</script>
-</body>
 
-</html>  
+      /**
+       * Main function to run the podcast extraction and render episodes.
+       */
+      async function run_it() {
+        // Retrieve the podcast search term from the input field
+        const podcast_id = document.getElementById("podcast_id").value;
+        const episodes = document.getElementById("episodes");
+
+        // Clear previous episode list and show a loading message
+        episodes.innerHTML = "";
+        const episode_hint = document.createElement("div");
+        episodes.appendChild(episode_hint);
+        episode_hint.innerText = "loading...";
+
+        // Fetch podcast and episode data
+        const podcast = await my_backend(podcast_id);
+
+        // Update the UI with the podcast name
+        document.getElementById("podcast_name").innerText =
+          podcast[0].albumName;
+
+        // Remove the loading message
+        const episode_tmp = document.querySelector("#episodes div");
+        episodes.removeChild(episode_tmp);
+
+        // Loop through episodes (excluding the first status object) and display each one
+        podcast.slice(1).forEach((episode) => {
+          // Create a list item for the episode
+          const episode_li = document.createElement("li");
+          episode_li.setAttribute("class", "grid");
+
+          // Create a clickable link for the episode title
+          const episode_anchor = document.createElement("a");
+          episode_anchor.setAttribute("href", episode.url);
+          episode_anchor.setAttribute("target", "_blank");
+          episode_anchor.innerText = episode.title;
+          episode_li.appendChild(episode_anchor);
+
+          // Create a span to show the publication date
+          const episode_span = document.createElement("span");
+          episode_span.setAttribute("style", "color: #999;");
+          episode_span.innerText = episode.date;
+          episode_li.appendChild(episode_span);
+
+          // Create a download button for the episode
+          const episode_button = document.createElement("button");
+          episode_button.setAttribute("id", episode.title);
+          episode_button.setAttribute(
+            "style",
+            "width: auto; margin-right: 0; margin-left: auto;"
+          );
+
+          // Determine file extension based on the episode URL
+          let filename_with_ext = episode.title + ".m4a";
+          if (episode.url.includes(".mp3")) {
+            filename_with_ext = episode.title + ".mp3";
+          }
+
+          // Attach the click event to download the episode using fetch
+          episode_button.onclick = function (evt) {
+            downloadUsingFetch(
+              proxy_api + episode.url,
+              filename_with_ext,
+              evt
+            );
+          };
+
+          episode_button.innerText = "download";
+          episode_li.appendChild(episode_button);
+
+          // Append the episode list item to the episodes container
+          episodes.appendChild(episode_li);
+        });
+      }
+
+      /**
+       * Updates the download progress displayed on the button.
+       *
+       * @param {Object} param0 - Object containing loaded and total bytes.
+       */
+      function progress({ loaded, total }) {
+        const elProgress = document.getElementById(id_download);
+        elProgress.innerHTML = Math.round((loaded / total) * 100) + "%";
+      }
+
+      /**
+       * Downloads a file using the Fetch API with progress tracking.
+       *
+       * @param {string} FILE_URL - URL of the file to download.
+       * @param {string} filename - Filename to save as.
+       * @param {Event} evt - The click event object.
+       */
+      async function downloadUsingFetch(FILE_URL, filename, evt) {
+        // Set the download element ID from the button's ID attribute
+        id_download = evt.target.getAttribute("id");
+
+        const elProgress = document.getElementById(id_download);
+        elProgress.innerHTML = "start processing...";
+
+        // Fetch the file from the URL
+        const myFile = await fetch(FILE_URL);
+        const contentLength = myFile.headers.get("content-length");
+        const total = parseInt(contentLength, 10);
+        let loaded = 0;
+
+        // Create a new response with a ReadableStream to monitor progress
+        const res = new Response(
+          new ReadableStream({
+            async start(controller) {
+              const reader = myFile.body.getReader();
+
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                loaded += value.byteLength;
+                progress({ loaded, total });
+                controller.enqueue(value);
+              }
+              controller.close();
+            },
+          })
+        );
+
+        // Convert the stream to a blob and trigger the file download
+        const myBlob = await res.blob();
+        saveAs(myBlob, filename);
+      }
+
+      /**
+       * Sets the podcast search input based on the built-in dropdown selection.
+       */
+      function option2input() {
+        document.getElementById("podcast_id").value =
+          document.getElementById("builtin_id").value;
+      }
+
+      /**
+       * Chains the actions: updates the input field and then runs the extraction.
+       */
+      function chain_action() {
+        option2input();
+        run_it();
+      }
+    </script>
+  </body>
+</html>
