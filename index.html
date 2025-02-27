@@ -1,57 +1,53 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <!-- Metadata and dependencies -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-    <!-- Page title -->
     <title>Apple Podcasts Extractor</title>
-
-    <!-- FileSaver.js: Used for saving files on the client-side -->
+    <!-- FileSaver.js for saving blobs as files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"></script>
-
-    <!-- Pico CSS: Minimal CSS framework for styling -->
+    <!-- PicoCSS for simple styling -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/picocss/1.5.10/pico.min.css">
   </head>
-
-  <body onload="option2input()">
+  <!-- Initialize app on page load -->
+  <body onload="initApp()">
     <main class="container">
-      <!-- Input for podcast search term -->
-      <label for="podcast_id">Podcast Search Term</label>
-      <input type="text" id="podcast_id" name="podcast_id">
+      <!-- Podcast search section with add/remove buttons -->
+      <div class="grid">
+        <div>
+          <label for="podcast_id">Podcast Search Term</label>
+          <input type="text" id="podcast_id" name="podcast_id">
+        </div>
+        <div style="display: flex; align-items: flex-end; gap: 0.5rem;">
+          <!-- Add button to append the selected podcast to options -->
+          <button onclick="addPodcast()" style="margin-bottom: 1rem;">Add</button> <!-- manually increase from 0 to 1rem -->
+          <!-- Remove button to remove the selected podcast from options -->
+          <button onclick="removePodcast()" style="margin-bottom: 1rem;">Remove</button> <!-- manually increase from 0 to 1rem -->
+        </div>
+      </div>
 
-      <!-- Dropdown for built-in podcast options -->
-      <select id="builtin_id" onchange="chain_action()">
-        <option selected disabled>Select Program</option>
-        <option value="曼報 Manny's Newsletter" selected="selected">曼報 Manny's Newsletter</option>
-        <option value="不明白播客">不明白播客</option>
-        <option value="范欽慧的自然書房">范欽慧的自然書房</option>
-        <option value="科技行腳">科技行腳</option>
-        <option value="后互联网时代的乱弹">后互联网时代的乱弹</option>
-        <option value="科技早知道">科技早知道</option>
-        <option value="三五环">三五环</option>
-        <option value="聽天下：天下雜誌Podcast">聽天下：天下雜誌Podcast</option>
-        <option value="T客播">T客播 TechPodcast</option>
-        <option value="塞掐">塞掐 Side Chat</option>
-        <option value="寶博朋友">寶博朋友說</option>
-        <option value="新聞真假掰">新聞真假掰</option>
-        <option value='硅谷101'>硅谷101</option>
-        <option value="枫言枫语">枫言枫语</option>
-        <option value="津津乐道">津津乐道</option>
-        <option value="科技聽IC">科技聽IC</option>
-        <option value="声动早咖啡">声动早咖啡</option>
-        <option value="未來雜貨電">未來雜貨電</option>
-        <option value="高效人生商學院">高效人生商學院</option>
-        <option value="半軟硬科技新聞">半軟硬科技新聞</option>
-        <option value="艾美講">艾美講 Amy蔣</option>
-        <option value="陳月卿">陳月卿 健康4.0</option>
-        <option value="Nutrition Facts with Dr. Greger">Nutrition Facts with Dr. Greger</option>
-        <option value="The Real Truth About Health">The Real Truth About Health</option>
-        <option value="聲活美學">聲活美學</option>
-      </select>
+      <!-- Podcast select and storage management section -->
+      <div class="grid">
+        <div>
+          <!-- Dropdown for podcast selection -->
+          <select id="builtin_id" onchange="chain_action()">
+            <option selected disabled>Select Program</option>
+            <option value="Nutrition Facts with Dr. Greger" selected="selected">Nutrition Facts with Dr. Greger</option>
+            <option value="The Real Truth About Health">The Real Truth About Health</option>
+          </select>
+        </div>
+        <!-- Storage and file management buttons -->
+        <div style="display: flex; gap: 0.5rem;">
+          <button onclick="savePodcastsToStorage()">Save to Storage</button>
+          <button onclick="loadPodcastsFromStorage()">Load from Storage</button>
+          <button onclick="savePodcastsToFile()">Export to File</button>
+          <button onclick="importPodcastsFromFile()">Import from File</button>
+          <!-- Hidden file input for importing -->
+          <input type="file" id="fileInput" style="display: none;" onchange="handleFileImport()" accept=".json">
+        </div>
+      </div>
 
-      <!-- Input for CORS proxy URL -->
+      <!-- CORS proxy configuration -->
       <label for="cors_proxy">CORS Proxy</label>
       <input
         type="text"
@@ -59,62 +55,247 @@
         name="cors_proxy"
         value="https://cors-anywhere.herokuapp.com/"
       >
-
-      <!-- Button to start the podcast extraction -->
+      <!-- Run button to fetch podcasts -->
       <button onclick="run_it()">Run</button>
-
-      <!-- Display the selected podcast name -->
+      <!-- Display section for podcast info -->
       <p>
         Podcast Name: <em><span id="podcast_name"></span></em>
       </p>
-
-      <!-- Container where episodes will be listed -->
+      <!-- Container for episode listings -->
       <div id="episodes"></div>
     </main>
-
-    <!-- JavaScript Section -->
     <script>
       // Global variables
-      let proxy_api;
-      let id_download;
+      let proxy_api; // Stores the CORS proxy URL
+      let id_download; // Stores the ID of the element being downloaded
 
       /**
-       * Fetches podcast data from the iTunes search API, retrieves the feed,
-       * parses the XML, and extracts episode details.
-       *
-       * @param {string} search - The podcast search term.
-       * @returns {Promise<Array>} - An array with the status object and episode details.
+       * Initialize the app on load
+       * - Loads saved podcasts from local storage
+       * - Sets initial podcast selection
+       */
+      function initApp() {
+        // Load podcasts from local storage on startup
+        loadPodcastsFromStorage();
+        // Set initial podcast value from the select element
+        option2input();
+      }
+
+      /**
+       * Add the current podcast value to the select options
+       * - Gets podcast name from input field
+       * - Checks for duplicates before adding
+       */
+      function addPodcast() {
+        // Get the podcast name from the input field
+        const podcastName = document.getElementById("podcast_id").value.trim();
+        if (!podcastName) return; // Don't add empty values
+        
+        const selectElement = document.getElementById("builtin_id");
+        
+        // Check if podcast already exists to avoid duplicates
+        for (let i = 0; i < selectElement.options.length; i++) {
+          if (selectElement.options[i].value === podcastName) {
+            alert("This podcast is already in your list");
+            return;
+          }
+        }
+        
+        // Create and add new option
+        const newOption = document.createElement("option");
+        newOption.value = podcastName;
+        newOption.text = podcastName;
+        selectElement.add(newOption);
+        
+        // Select the newly added option
+        selectElement.value = podcastName;
+      }
+      
+      /**
+       * Remove the selected podcast from options
+       * - Removes podcast that matches input value
+       * - Updates selection after removal
+       */
+      function removePodcast() {
+        const podcastName = document.getElementById("podcast_id").value.trim();
+        if (!podcastName) return;
+        
+        const selectElement = document.getElementById("builtin_id");
+        
+        // Find and remove the option
+        for (let i = 0; i < selectElement.options.length; i++) {
+          if (selectElement.options[i].value === podcastName) {
+            selectElement.remove(i);
+            break;
+          }
+        }
+        
+        // Select the first option if available
+        if (selectElement.options.length > 0) {
+          selectElement.selectedIndex = 0;
+          option2input();
+        } else {
+          document.getElementById("podcast_id").value = "";
+        }
+      }
+      
+      /**
+       * Save podcasts to local storage
+       * - Collects all podcast options
+       * - Stores as JSON in localStorage
+       */
+      function savePodcastsToStorage() {
+        const selectElement = document.getElementById("builtin_id");
+        const podcasts = [];
+        
+        // Skip the first disabled option if present
+        const startIndex = selectElement.options[0].disabled ? 1 : 0;
+        
+        // Collect all podcast options
+        for (let i = startIndex; i < selectElement.options.length; i++) {
+          podcasts.push({
+            value: selectElement.options[i].value,
+            text: selectElement.options[i].text
+          });
+        }
+        
+        // Save to localStorage
+        localStorage.setItem("savedPodcasts", JSON.stringify(podcasts));
+        alert("Podcasts saved to browser storage");
+      }
+      
+      /**
+       * Load podcasts from local storage
+       * - Retrieves saved podcasts
+       * - Adds them to the select element
+       */
+      function loadPodcastsFromStorage() {
+        const savedPodcasts = localStorage.getItem("savedPodcasts");
+        if (!savedPodcasts) return;
+        
+        const podcasts = JSON.parse(savedPodcasts);
+        addPodcastsToSelect(podcasts);
+      }
+      
+      /**
+       * Save podcasts to a downloadable file
+       * - Collects all podcast options
+       * - Creates a JSON file for download
+       */
+      function savePodcastsToFile() {
+        const selectElement = document.getElementById("builtin_id");
+        const podcasts = [];
+        
+        // Skip the first disabled option if present
+        const startIndex = selectElement.options[0].disabled ? 1 : 0;
+        
+        // Collect all podcast options
+        for (let i = startIndex; i < selectElement.options.length; i++) {
+          podcasts.push({
+            value: selectElement.options[i].value,
+            text: selectElement.options[i].text
+          });
+        }
+        
+        // Create a blob and save it as a file
+        const blob = new Blob([JSON.stringify(podcasts, null, 2)], {type: "application/json"});
+        saveAs(blob, "my_podcasts.json");
+      }
+      
+      /**
+       * Trigger file import dialog
+       * - Clicks the hidden file input
+       */
+      function importPodcastsFromFile() {
+        document.getElementById("fileInput").click();
+      }
+      
+      /**
+       * Handle file import after file selection
+       * - Reads the selected JSON file
+       * - Adds the podcasts to the select element
+       */
+      function handleFileImport() {
+        const fileInput = document.getElementById("fileInput");
+        const file = fileInput.files[0];
+        
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            try {
+              const podcasts = JSON.parse(e.target.result);
+              addPodcastsToSelect(podcasts);
+              alert("Podcasts imported successfully");
+            } catch (error) {
+              alert("Error importing podcasts: Invalid file format");
+            }
+          };
+          reader.readAsText(file);
+        }
+        
+        // Reset file input
+        fileInput.value = "";
+      }
+      
+      /**
+       * Helper function to add podcasts to select element avoiding duplicates
+       * - Takes array of podcast objects
+       * - Adds only new podcasts to the select element
+       */
+      function addPodcastsToSelect(podcasts) {
+        const selectElement = document.getElementById("builtin_id");
+        const existingValues = new Set();
+        
+        // Get existing values
+        for (let i = 0; i < selectElement.options.length; i++) {
+          existingValues.add(selectElement.options[i].value);
+        }
+        
+        // Add new podcasts avoiding duplicates
+        podcasts.forEach(podcast => {
+          if (!existingValues.has(podcast.value)) {
+            const option = document.createElement("option");
+            option.value = podcast.value;
+            option.text = podcast.text || podcast.value;
+            selectElement.add(option);
+            existingValues.add(podcast.value);
+          }
+        });
+      }
+
+      /**
+       * Backend function to search and fetch podcast data
+       * - Searches iTunes API for podcast
+       * - Parses XML feed to extract episodes
+       * - Returns array of episode information
        */
       async function my_backend(search) {
-        // Ensure a search term is provided
+        // Validate search term
         if (!search)
           return [{ status: "error", reason: "lack of album" }];
-
-        // Construct the iTunes search URL using the provided search term
+        
+        // Construct iTunes search URL
         const url = `https://itunes.apple.com/search?term=${search}&country=US`;
-
-        // Get the CORS proxy URL from the input field
         proxy_api = document.getElementById("cors_proxy").value;
+        
+        // Fetch search results
         let status;
-
-        // Fetch the search results via the proxy
         try {
           const response = await fetch(proxy_api + url, { method: "GET" });
           status = await response.json();
         } catch (error) {
           return [{ status: "error", reason: "failed url or network" }];
         }
-
-        // Check if any results were returned
+        
+        // Process search results
         const count = status["resultCount"] || 0;
         const results = status["results"];
-
         if (count === 0) {
           return [{ status: "error", reason: "failed album" }];
         }
-
+        
+        // Find matching podcast
         let feed_url, album_title;
-        // Loop through the results to find a matching track name
         for (let result of results) {
           if (result["trackName"].includes(search)) {
             feed_url = result["feedUrl"];
@@ -122,109 +303,106 @@
             break;
           }
         }
-
+        
+        // Fetch podcast feed XML
         let xml;
-        // Attempt to fetch the podcast RSS feed via the proxy
         try {
           const res0 = await fetch(proxy_api + feed_url, { method: "GET" });
           xml = await res0.text();
         } catch (error) {
           return [{ status: "error", reason: "failed feed url or network" }];
         }
-
-        // Parse the XML feed
+        
+        // Parse XML to extract episodes
         const parser = new DOMParser();
         const htmlDoc = parser.parseFromString(xml, "text/xml");
-
-        // Select all episodes from the feed
         const CSS_TRACKS = "rss channel item";
         const tracks = htmlDoc.querySelectorAll(CSS_TRACKS);
+        
+        // Extract episode information
         let info = [];
-
-        // Extract episode details for each track
         for (let track of tracks) {
           let title = track.querySelector("title").innerHTML;
-          // Remove CDATA markers if present
           title = title.replace("<![CDATA[", "").replace("]]>", "");
-
           info.push({
             title: title,
             date: track.querySelector("pubDate").innerHTML,
             url: track.querySelector("enclosure").getAttribute("url"),
           });
         }
-
-        // Return an error if no episodes were found
+        
+        // Validate results
         if (!info.length) {
           return [{ status: "error", reason: "invalid album" }];
         }
-
-        // Prepend the status info (including album name) to the episodes array
+        
+        // Add status and album info
         const program_status = { status: "ok", albumName: album_title };
         info = [program_status, ...info];
 
         return info;
       }
-
+      
       /**
-       * Main function to run the podcast extraction and render episodes.
+       * Fetch and display podcast episodes
+       * - Retrieves podcast data
+       * - Creates and populates episode list
        */
       async function run_it() {
-        // Retrieve the podcast search term from the input field
         const podcast_id = document.getElementById("podcast_id").value;
         const episodes = document.getElementById("episodes");
-
-        // Clear previous episode list and show a loading message
+        
+        // Clear previous episodes
         episodes.innerHTML = "";
+        
+        // Show loading indicator
         const episode_hint = document.createElement("div");
         episodes.appendChild(episode_hint);
         episode_hint.innerText = "loading...";
-
-        // Fetch podcast and episode data
+        
+        // Fetch podcast data
         const podcast = await my_backend(podcast_id);
-
-        // Update the UI with the podcast name
         document.getElementById("podcast_name").innerText =
           podcast[0].albumName;
-
-        // Remove the loading message
+        
+        // Remove loading indicator
         const episode_tmp = document.querySelector("#episodes div");
         episodes.removeChild(episode_tmp);
-
-        // Loop through episodes (excluding the first status object) and display each one
+        
+        // Create episode list items
         podcast.slice(1).forEach((episode) => {
-          // Create a list item for the episode
+          // Create list item container
           const episode_li = document.createElement("li");
           episode_li.setAttribute("class", "grid");
-
-          // Create a clickable link for the episode title
+          
+          // Create episode link
           const episode_anchor = document.createElement("a");
           episode_anchor.setAttribute("href", episode.url);
           episode_anchor.setAttribute("target", "_blank");
           episode_anchor.innerText = episode.title;
           episode_li.appendChild(episode_anchor);
-
-          // Create a span to show the publication date
+          
+          // Create date display
           const episode_span = document.createElement("span");
           episode_span.setAttribute("style", "color: #999;");
           episode_span.innerText = episode.date;
           episode_li.appendChild(episode_span);
-
-          // Create a download button for the episode
+          
+          // Create download button
           const episode_button = document.createElement("button");
           episode_button.setAttribute("id", episode.title);
           episode_button.setAttribute(
             "style",
             "width: auto; margin-right: 0; margin-left: auto;"
           );
-
-          // Determine file extension based on the episode URL
+          
+          // Determine file extension
           let filename_with_ext = episode.title + ".m4a";
           if (episode.url.includes(".mp3")) {
             filename_with_ext = episode.title + ".mp3";
           }
-
-          // Attach the click event to download the episode using fetch
+          
+          // Set download handler
           episode_button.onclick = function (evt) {
             downloadUsingFetch(
               proxy_api + episode.url,
@@ -235,52 +413,44 @@
 
           episode_button.innerText = "download";
           episode_li.appendChild(episode_button);
-
-          // Append the episode list item to the episodes container
           episodes.appendChild(episode_li);
         });
       }
-
+      
       /**
-       * Updates the download progress displayed on the button.
-       *
-       * @param {Object} param0 - Object containing loaded and total bytes.
+       * Update download progress
+       * - Calculates and displays percentage
        */
       function progress({ loaded, total }) {
         const elProgress = document.getElementById(id_download);
         elProgress.innerHTML = Math.round((loaded / total) * 100) + "%";
       }
-
+      
       /**
-       * Downloads a file using the Fetch API with progress tracking.
-       *
-       * @param {string} FILE_URL - URL of the file to download.
-       * @param {string} filename - Filename to save as.
-       * @param {Event} evt - The click event object.
+       * Download file with progress tracking
+       * - Fetches file with progress updates
+       * - Saves file using FileSaver.js
        */
       async function downloadUsingFetch(FILE_URL, filename, evt) {
-        // Set the download element ID from the button's ID attribute
+        // Get target element ID for progress updates
         id_download = evt.target.getAttribute("id");
-
         const elProgress = document.getElementById(id_download);
         elProgress.innerHTML = "start processing...";
-
-        // Fetch the file from the URL
+        
+        // Fetch file
         const myFile = await fetch(FILE_URL);
         const contentLength = myFile.headers.get("content-length");
         const total = parseInt(contentLength, 10);
         let loaded = 0;
-
-        // Create a new response with a ReadableStream to monitor progress
+        
+        // Create response with progress tracking
         const res = new Response(
           new ReadableStream({
             async start(controller) {
               const reader = myFile.body.getReader();
-
               while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-
                 loaded += value.byteLength;
                 progress({ loaded, total });
                 controller.enqueue(value);
@@ -289,22 +459,24 @@
             },
           })
         );
-
-        // Convert the stream to a blob and trigger the file download
+        
+        // Save the file
         const myBlob = await res.blob();
         saveAs(myBlob, filename);
       }
-
+      
       /**
-       * Sets the podcast search input based on the built-in dropdown selection.
+       * Copy selected podcast to input field
+       * - Updates the input field with selected value
        */
       function option2input() {
         document.getElementById("podcast_id").value =
           document.getElementById("builtin_id").value;
       }
-
+      
       /**
-       * Chains the actions: updates the input field and then runs the extraction.
+       * Update input and run search
+       * - Called when podcast is selected from dropdown
        */
       function chain_action() {
         option2input();
