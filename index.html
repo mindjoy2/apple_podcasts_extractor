@@ -8,6 +8,32 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"></script>
     <!-- PicoCSS for simple styling -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/picocss/1.5.10/pico.min.css">
+
+    <style>
+      /* Hide or display group buttons */
+      #button-group {
+        position: fixed;
+        top: 5px;
+        right: 5px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        display: flex;
+        flex-direction: row; /* column */
+        /* align-items: flex-end; */
+        padding: 5px; /* Ensures consistent hover area */
+        gap: 5px;
+      }
+
+      #button-group:hover {
+        opacity: 1;
+      }
+      
+      @media (max-width: 600px) {
+        #button-group {
+          flex-direction: column;
+        }
+      }
+    </style>
   </head>
   <!-- Initialize app on page load -->
   <body onload="initApp()">
@@ -18,12 +44,12 @@
           <label for="podcast_id">Podcast Search Term</label>
           <input type="text" id="podcast_id" name="podcast_id">
         </div>
-        <div style="display: flex; align-items: flex-end; gap: 0.5rem;">
+        <!-- <div style="display: flex; align-items: flex-end; gap: 0.5rem;"> -->
           <!-- Add button to append the selected podcast to options -->
-          <button onclick="addPodcast()" style="margin-bottom: 1rem;">Add</button> <!-- manually increase from 0 to 1rem -->
+          <!--<button onclick="addPodcast()" style="margin-bottom: 1rem;">Add</button>--> <!-- manually increase from 0 to 1rem -->
           <!-- Remove button to remove the selected podcast from options -->
-          <button onclick="removePodcast()" style="margin-bottom: 1rem;">Remove</button> <!-- manually increase from 0 to 1rem -->
-        </div>
+          <!--<button onclick="removePodcast()" style="margin-bottom: 1rem;">Remove</button>--> <!-- manually increase from 0 to 1rem -->
+        <!-- </div> -->
       </div>
 
       <!-- Podcast select and storage management section -->
@@ -37,14 +63,14 @@
           </select>
         </div>
         <!-- Storage and file management buttons -->
-        <div style="display: flex; gap: 0.5rem;">
-          <button onclick="savePodcastsToStorage()">Save to Storage</button>
+        <!-- <div style="display: flex; gap: 0.5rem;"> -->
+          <!-- <button onclick="savePodcastsToStorage()">Save to Storage</button>
           <button onclick="loadPodcastsFromStorage()">Load from Storage</button>
           <button onclick="savePodcastsToFile()">Export to File</button>
-          <button onclick="importPodcastsFromFile()">Import from File</button>
+          <button onclick="importPodcastsFromFile()">Import from File</button> -->
           <!-- Hidden file input for importing -->
           <input type="file" id="fileInput" style="display: none;" onchange="handleFileImport()" accept=".json">
-        </div>
+        <!-- </div> -->
       </div>
 
       <!-- CORS proxy configuration -->
@@ -57,6 +83,17 @@
       >
       <!-- Run button to fetch podcasts -->
       <button onclick="run_it()">Run</button>
+
+      <!-- Storage management buttons -->
+      <div id="button-group">
+          <button onclick="addPodcast()">Add</button>
+          <button onclick="removePodcast()">Remove</button>
+          <button onclick="savePodcastsToStorage()">Save to Storage</button>
+          <button onclick="loadPodcastsFromStorage()">Load from Storage</button>
+          <button onclick="savePodcastsToFile()">Export to File</button>
+          <button onclick="importPodcastsFromFile()">Import from File</button>
+      </div>
+
       <!-- Display section for podcast info -->
       <p>
         Podcast Name: <em><span id="podcast_name"></span></em>
