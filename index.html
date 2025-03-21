@@ -15,18 +15,19 @@
         position: fixed;
         top: 5px;
         right: 5px;
-        opacity: 0;
+        /* opacity: 0;
         transition: opacity 0.3s;
-        display: flex;
+        display: flex; */
+        display: none;
         flex-direction: row; /* column */
         /* align-items: flex-end; */
         padding: 5px; /* Ensures consistent hover area */
         gap: 5px;
       }
 
-      #button-group:hover {
+      /* #button-group:hover {
         opacity: 1;
-      }
+      } */
       
       @media (max-width: 600px) {
         #button-group {
@@ -519,6 +520,20 @@
         option2input();
         run_it();
       }
+
+      const buttonGroup = document.getElementById('button-group');
+
+      document.addEventListener('mousemove', (event) => {
+          if (event.clientX > window.innerWidth - 100 && event.clientY < 100) {
+                //buttonGroup.style.opacity = '1';
+                buttonGroup.style.display = 'flex';
+            }
+        });
+
+      buttonGroup.addEventListener('mouseleave', () => {
+        //buttonGroup.style.opacity = '0';
+        buttonGroup.style.display = 'none';
+      });
     </script>
   </body>
 </html>
